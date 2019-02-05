@@ -2,6 +2,7 @@ const expect = require('expect');
 const request = require('supertest');
 const {app} =require('./../app');
 const {Todo} =require('./../models/todo');
+const {ObjectID} = require('mongodb');
 
 const dummyTodos=[
   {
@@ -62,6 +63,25 @@ describe('GET /todos',()=>{
         .expect((res)=>{
           expect(res.body.todos.length).toBe(3);
         })
+        .end(done);
+   });
+
+   it('should get todos by id ',(done)=>{
+     var id="5c586bcb0b9cf311fafb86b2";
+       request(app)
+        .get(`/todos/${id}`)
+        .expect(200)
+        .expect((res)=>{
+          expect(res.body.todo._id).toBe('5c586bcb0b9cf311fafb86b2');
+        })
+        .end(done);
+   });
+
+   it('should 404 on  invalid todos by id ',(done)=>{
+     var id=new ObjectID().toHexString();
+       request(app)
+        .get(`/todos/${id}`)
+        .expect(404)
         .end(done);
    });
 });
