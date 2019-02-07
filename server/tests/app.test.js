@@ -17,9 +17,11 @@ const dummyTodos=[
 ];
 
 beforeEach((done)=>{
- Todo.remove({}).then(()=>{
+ Todo.remove({}).then((result)=>{
     return Todo.insertMany(dummyTodos);
-   }).then(()=>done());
+  })
+  .then(()=>done())
+  .catch((error)=>done(error));
 });
 
 describe('Post /todos',()=>{

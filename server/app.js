@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
@@ -34,7 +35,7 @@ app.get('/todos/:id',(req,res)=>{
   var id=req.params.id;
 
   if(!ObjectID.isValid(id))
-    return res.status(404).send({message:'Invalid Id'})
+    return res.status(404).send({message:'Invalid Id'});
 
    Todo.findById(id).then((todo)=>{
        if(!todo)
@@ -45,6 +46,51 @@ app.get('/todos/:id',(req,res)=>{
       res.status(400).send({message:'Error',error})
    });
 });
+
+
+app.patch('/todos/:id',(req,res)=>{
+  var id=req.body.id;
+  var body=_.pick(req.body,['text','completed']);
+
+  if(!ObjectID.isValid(id))
+    return res.status(404).send({message:'Invalid Id'});
+
+  if(_.isBoolean(body.completed) && body.completed)
+    body.completedAt=new Date().getTime();
+  else{
+    body.completed=false;
+    body.completedAt=null;
+  }
+
+   Todo.findByIdAndUpdate(id,{$set:body},{new:true}).then((todo)=>{
+    if(!todo)
+     return res.status(404).send();
+
+     res.send(todo);
+   },(error)=>{
+      res.send(400).send({error});
+   });
+
+});
+
+app.post('/users',(req,res)=>{
+  var userBody=_.pick(req.body,['name','password','age','email']);
+  var user=new User(userBody);
+
+  user.save().then(()=>{
+    var token= user.generateAuthToken();
+    console.log('Token',token);
+    return token;
+  })
+  .then((token)=>{
+    res.header('x-auth',token).send({status:'ok',user})
+  })
+  .catch((error)=>{
+     res.status(400).send({status:'error',error});
+  });
+
+});
+
 app.listen(port,()=>{
   console.log(`Server is up and running on port ${port}`);
 });
