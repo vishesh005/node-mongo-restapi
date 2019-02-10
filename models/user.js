@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 var userSchema=new mongoose.Schema({
   name:{
     type:String,
@@ -17,8 +18,7 @@ var userSchema=new mongoose.Schema({
   }
   ,
   age:{
-    type:Number,
-    default:00
+    type:Number
   },
   email:{
     type:String,
@@ -49,6 +49,7 @@ userSchema.methods.toJSON=function() {
   return _.pick(userObject,['age','_id','name','email']);
 };
 
+
 userSchema.methods.generateAuthToken=function(){
   var user=this;
   var access='auth';
@@ -57,7 +58,43 @@ userSchema.methods.generateAuthToken=function(){
 
   return user.save().then(()=>{
     return token;
-  }).catch((error)=>console.log('Error in creating auth'));
+  })
+  .catch((error)=>console.log('Error in creating auth'));
 };
+
+userSchema.statics.findByToken=function (token){
+  var user=this;
+  var decoded;
+  try{
+  decoded=jwt.verify(token,'abc123');
+  }
+  catch(e){
+    return new Promise((sucess,reject)=>{
+      reject();
+    });
+  }
+
+  return user.findOne({
+    _id:decoded._id,
+    'tokens.token':token,
+    'tokens.access':'auth'
+  });
+};
+
+ userSchema.pre('save',function(next) {
+   var user=this;
+
+    if( !user.isModified('password')){
+        bcrypt.genSalt(10,(error,salt)=>{
+           bcrypt.hash(user.password,salt,(error,hash)=>{
+              user.password=hash;
+              next();
+           });
+        });
+    }
+    else
+      next();
+ });
+
 var User =mongoose.model('Users',userSchema);
  module.exports = {User};
